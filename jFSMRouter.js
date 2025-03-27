@@ -1,18 +1,20 @@
+'use strict';
 export class jFSMRouter {
     static Create(initialState) {
         return new jFSMRouter(initialState);
     }
+    _regexDuplicatePathId = new RegExp(/\/(:\w+)\[(?:09|AZ)]\/(?:.+\/)?(\1)(?:\[(?:09|AZ)]|\/|$)/g);
+    _regexSearchVariables = new RegExp(/(?<=^|\/):(\w+)(?:\[(09|AZ)])?(?=\/|$)/g);
+    _routes = [];
+    _routeFunction403 = undefined;
+    _routeFunction404 = undefined;
+    _routing = false;
+    _queue = [];
+    _inTransition = false;
+    _currentState;
+    _states = {};
+    _transitions = {};
     constructor(initialState) {
-        this._regexDuplicatePathId = new RegExp(/\/(:\w+)\[(?:09|AZ)]\/(?:.+\/)?(\1)(?:\[(?:09|AZ)]|\/|$)/g);
-        this._regexSearchVariables = new RegExp(/(?<=^|\/):(\w+)(?:\[(09|AZ)])?(?=\/|$)/g);
-        this._routes = [];
-        this._routeFunction403 = undefined;
-        this._routeFunction404 = undefined;
-        this._routing = false;
-        this._queue = [];
-        this._inTransition = false;
-        this._states = {};
-        this._transitions = {};
         window.addEventListener("hashchange", this.CheckHash.bind(this));
         this.StateAdd(initialState);
         this._currentState = initialState;
@@ -157,7 +159,7 @@ export class jFSMRouter {
         return returnValue;
     }
     StateGet() {
-        return (this._currentState);
+        return this._currentState;
     }
     async StateSet(nextState) {
         let returnValue = false;
@@ -385,7 +387,7 @@ export class jFSMRouter {
         }
     }
     async CheckHash() {
-        let hash = (window.location.hash.startsWith('#') ? window.location.hash.substring(1) : '');
+        const hash = (window.location.hash.startsWith('#') ? window.location.hash.substring(1) : '');
         if ('' != hash) {
             if (this._routing) {
                 this._queue.push(hash);

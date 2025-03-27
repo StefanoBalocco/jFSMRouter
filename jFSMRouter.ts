@@ -1,3 +1,5 @@
+'use strict';
+
 export type FunctionOnEnter = ( currentState: string, nextState: string ) => ( void | Promise<void> );
 export type FunctionOnLeave = ( currentState: string, prevState: string ) => ( void | Promise<void> );
 export type FunctionOnTransitionAfter = () => ( void | Promise<void> );
