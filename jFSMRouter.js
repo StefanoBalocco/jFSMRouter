@@ -269,7 +269,7 @@ export class jFSMRouter {
                 const cFL = paths.length;
                 for (let iFL = 0; iFL < cFL; iFL++) {
                     if (!paths[iFL].startsWith(':')) {
-                        weight += 2 ^ (cFL - iFL - 1);
+                        weight += 2 ** (cFL - iFL - 1);
                     }
                 }
                 let regex = new RegExp('^' + path.replace(this._regexSearchVariables, function (_unused, name, type) {
@@ -310,7 +310,7 @@ export class jFSMRouter {
     }
     RouteDel(path) {
         let returnValue = false;
-        if (!path.match(this._regexDuplicatePathId)) {
+        if (path.match(this._regexDuplicatePathId)) {
             throw new SyntaxError('Duplicate path id');
         }
         else {
