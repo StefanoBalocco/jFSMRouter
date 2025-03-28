@@ -8,7 +8,7 @@ export type CheckAvailability = (path: string, hashPath: string, params?: {
 export type RouteFunction = (path: string, hashPath: string, params?: {
     [key: string]: string;
 }) => (void | Promise<void>);
-export declare class jFSMRouter {
+export default class jFSMRouter {
     static Create(initialState: string): jFSMRouter;
     private _regexDuplicatePathId;
     private _regexSearchVariables;

@@ -16,7 +16,7 @@ type Route = {
 	routeFunction403?: RouteFunction
 };
 
-export class jFSMRouter {
+export default class jFSMRouter {
 	public static Create( initialState: string ): jFSMRouter {
 		return new jFSMRouter( initialState );
 	}

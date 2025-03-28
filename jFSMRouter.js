@@ -1,5 +1,5 @@
 'use strict';
-export class jFSMRouter {
+export default class jFSMRouter {
     static Create(initialState) {
         return new jFSMRouter(initialState);
     }
