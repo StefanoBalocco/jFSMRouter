@@ -20,11 +20,12 @@ export class jFSMRouter {
 	public static Create( initialState: string ): jFSMRouter {
 		return new jFSMRouter( initialState );
 	}
-	private _regexDuplicatePathId = new RegExp( /\/(:\w+)\[(?:09|AZ)]\/(?:.+\/)?(\1)(?:\[(?:09|AZ)]|\/|$)/g );
-	private _regexSearchVariables = new RegExp( /(?<=^|\/):(\w+)(?:\[(09|AZ)])?(?=\/|$)/g );
+	private _regexDuplicatePathId = new RegExp( /\/(:\w+)(?:\[(?:09|AZ|AZ09)])?\/(?:.+\/)?(\1)(?:\[(?:09|AZ|AZ09)])?(?:\/|$)/g );
+	private _regexSearchVariables = new RegExp( /(?<=^|\/):(\w+)(?:\[(09|AZ|AZ09)])?(?=\/|$)/g );
 	private _routes: Route[] = [];
 	private _routeFunction403: ( RouteFunction | undefined ) = undefined;
 	private _routeFunction404: ( RouteFunction | undefined ) = undefined;
+	private _routeFunction500: ( RouteFunction | undefined ) = undefined;
 	private _routing: boolean = false;
 	private _queue: string[] = [];
 
@@ -37,6 +38,21 @@ export class jFSMRouter {
 		window.addEventListener( "hashchange", this.CheckHash.bind( this ) );
 		this.StateAdd( initialState );
 		this._currentState = initialState;
+	}
+
+	private static CheckRouteEquivalence( path1: string, path2: string ): boolean {
+		const generateVariants = (path: string): string[ ] => {
+			let returnValue : string[ ] = [ path ];
+			if( path.includes( ':AZ09' ) ) {
+				returnValue.push(
+					...generateVariants( path.replace( /:AZ09/, ':AZ' ) ),
+					...generateVariants( path.replace( /:AZ09/, ':09' ) )
+				);
+			}
+			return returnValue;
+		};
+		const variants = new Set( generateVariants( path1 ) );
+		return [...generateVariants( path2 ) ].some( x => variants.has( x ) );
 	}
 
 	public StateAdd( state: string ): boolean {
@@ -197,6 +213,7 @@ export class jFSMRouter {
 	public async StateSet( nextState: string ): Promise<boolean> {
 		let returnValue = false;
 		if( !this._inTransition ) {
+			this._inTransition = true;
 			if( 'undefined' !== typeof ( this._states[ nextState ] ) ) {
 				if( ( 'undefined' !== typeof ( this._transitions[ this._currentState ] ) ) && ( 'undefined' !== typeof ( this._transitions[ this._currentState ][ nextState ] ) ) ) {
 					returnValue = true;
@@ -280,6 +297,11 @@ export class jFSMRouter {
 				returnValue = true;
 				break;
 			}
+			case 500: {
+				this._routeFunction500 = routeFunction;
+				returnValue = true;
+				break;
+			}
 			default: {
 				throw new RangeError();
 			}
@@ -315,15 +337,19 @@ export class jFSMRouter {
 								returnValue += 'a-zA-Z';
 								break;
 							}
+							case 'AZ09':
 							default: {
-								returnValue += '\\w';
+								returnValue += 'a-zA-Z\\d';
 							}
 						}
 						returnValue += ']+)';
 						return returnValue;
 					} ).replace( /\//g, '\\\/' ) + '$' );
-				const reducedPath = path.replace( this._regexSearchVariables, ':$2' );
-				if( !this._routes.find( ( route: Route ): boolean => ( reducedPath === route.path ) ) ) {
+				const reducedPath = path.replace(
+					this._regexSearchVariables,
+					( _, __, component ) => `:${component ?? 'AZ09'}`
+				);
+				if( !this._routes.find( ( route: Route ) : boolean => jFSMRouter.CheckRouteEquivalence( reducedPath, route.path ) ) ) {
 					this._routes.push( {
 						path: reducedPath,
 						validState: validState,
@@ -348,8 +374,11 @@ export class jFSMRouter {
 		if( path.match( this._regexDuplicatePathId ) ) {
 			throw new SyntaxError( 'Duplicate path id' );
 		} else {
-			const reducedPath = path.replace( this._regexSearchVariables, ':$2' );
-			const index = this._routes.findIndex( ( route ) => ( reducedPath == route.path ) );
+			const reducedPath = path.replace(
+				this._regexSearchVariables,
+				( _, __, component ) => `:${component ?? 'AZ09'}`
+			);
+			const index = this._routes.findIndex( ( route : Route ) : boolean => jFSMRouter.CheckRouteEquivalence( reducedPath, route.path ) );
 			if( -1 < index ) {
 				this._routes.splice( index, 1 );
 				returnValue = true;
@@ -372,9 +401,8 @@ export class jFSMRouter {
 		for( const route of this._routes ) {
 			if( ( result = route.match.exec( path ) ) ) {
 				routePath = route.path;
-				let available: boolean = true;
+				let available: boolean = false;
 				if( route.available ) {
-					available = false;
 					if( 'function' === typeof route.available ) {
 						if( 'AsyncFunction' === route.available.constructor.name ) {
 							available = await route.available( routePath, path, ( result.groups ?? {} ) );
@@ -392,9 +420,13 @@ export class jFSMRouter {
 						)
 				) {
 					if( route.validState && ( this._currentState !== route.validState ) ) {
-						await this.StateSet( route.validState );
+						routeFunction = route.routeFunction;
+						if( !( await this.StateSet( route.validState ) ) ) {
+							routeFunction = this._routeFunction500;
+						}
+					} else {
+						routeFunction = this._routeFunction500;
 					}
-					routeFunction = route.routeFunction;
 				} else if( route.routeFunction403 ) {
 					routeFunction = route.routeFunction403;
 				} else if( this._routeFunction403 ) {
@@ -403,9 +435,14 @@ export class jFSMRouter {
 				break;
 			}
 		}
-		if( !routeFunction || ( 'function' !== typeof routeFunction ) ) {
+		if( !routeFunction ) {
 			if( this._routeFunction404 ) {
 				routeFunction = this._routeFunction404;
+			}
+		}
+		if( 'function' !== typeof routeFunction ) {
+			if( this._routeFunction500 ) {
+				routeFunction = this._routeFunction500;
 			}
 		}
 		if( routeFunction && ( 'function' === typeof routeFunction ) ) {

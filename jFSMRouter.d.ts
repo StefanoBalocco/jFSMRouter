@@ -15,6 +15,7 @@ export declare class jFSMRouter {
     private _routes;
     private _routeFunction403;
     private _routeFunction404;
+    private _routeFunction500;
     private _routing;
     private _queue;
     private _inTransition;
@@ -22,6 +23,7 @@ export declare class jFSMRouter {
     private _states;
     private _transitions;
     private constructor();
+    private static CheckRouteEquivalence;
     StateAdd(state: string): boolean;
     StateDel(state: string): boolean;
     StateOnEnterAdd(state: string, func: FunctionOnEnter): boolean;

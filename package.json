@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/StefanoBalocco/jFSMRouter.git"
   },
-  "version": "1.0.2",
+  "version": "1.0.3",
   "keywords": [
     "hash router",
     "client-side router",
@@ -21,12 +21,11 @@
     "url": "https://github.com/StefanoBalocco/jFSMRouter/issues"
   },
   "homepage": "https://github.com/StefanoBalocco/jFSMRouter",
-  "dependencies": {},
   "scripts": {
     "build": "node_modules/typescript/bin/tsc && node_modules/terser/bin/terser jFSMRouter.js -o jFSMRouter.min.js -m -c --mangle-props regex=/^_/"
   },
   "devDependencies": {
-    "terser": "~5",
-    "typescript": "~5"
+    "terser": "~5.39.0",
+    "typescript": "~5.8.2"
   }
 }

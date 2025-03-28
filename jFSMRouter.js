@@ -3,11 +3,12 @@ export class jFSMRouter {
     static Create(initialState) {
         return new jFSMRouter(initialState);
     }
-    _regexDuplicatePathId = new RegExp(/\/(:\w+)\[(?:09|AZ)]\/(?:.+\/)?(\1)(?:\[(?:09|AZ)]|\/|$)/g);
-    _regexSearchVariables = new RegExp(/(?<=^|\/):(\w+)(?:\[(09|AZ)])?(?=\/|$)/g);
+    _regexDuplicatePathId = new RegExp(/\/(:\w+)(?:\[(?:09|AZ|AZ09)])?\/(?:.+\/)?(\1)(?:\[(?:09|AZ|AZ09)])?(?:\/|$)/g);
+    _regexSearchVariables = new RegExp(/(?<=^|\/):(\w+)(?:\[(09|AZ|AZ09)])?(?=\/|$)/g);
     _routes = [];
     _routeFunction403 = undefined;
     _routeFunction404 = undefined;
+    _routeFunction500 = undefined;
     _routing = false;
     _queue = [];
     _inTransition = false;
@@ -18,6 +19,17 @@ export class jFSMRouter {
         window.addEventListener("hashchange", this.CheckHash.bind(this));
         this.StateAdd(initialState);
         this._currentState = initialState;
+    }
+    static CheckRouteEquivalence(path1, path2) {
+        const generateVariants = (path) => {
+            let returnValue = [path];
+            if (path.includes(':AZ09')) {
+                returnValue.push(...generateVariants(path.replace(/:AZ09/, ':AZ')), ...generateVariants(path.replace(/:AZ09/, ':09')));
+            }
+            return returnValue;
+        };
+        const variants = new Set(generateVariants(path1));
+        return [...generateVariants(path2)].some(x => variants.has(x));
     }
     StateAdd(state) {
         let returnValue = false;
@@ -164,6 +176,7 @@ export class jFSMRouter {
     async StateSet(nextState) {
         let returnValue = false;
         if (!this._inTransition) {
+            this._inTransition = true;
             if ('undefined' !== typeof (this._states[nextState])) {
                 if (('undefined' !== typeof (this._transitions[this._currentState])) && ('undefined' !== typeof (this._transitions[this._currentState][nextState]))) {
                     returnValue = true;
@@ -248,6 +261,11 @@ export class jFSMRouter {
                 returnValue = true;
                 break;
             }
+            case 500: {
+                this._routeFunction500 = routeFunction;
+                returnValue = true;
+                break;
+            }
             default: {
                 throw new RangeError();
             }
@@ -283,15 +301,16 @@ export class jFSMRouter {
                             returnValue += 'a-zA-Z';
                             break;
                         }
+                        case 'AZ09':
                         default: {
-                            returnValue += '\\w';
+                            returnValue += 'a-zA-Z\\d';
                         }
                     }
                     returnValue += ']+)';
                     return returnValue;
                 }).replace(/\//g, '\\\/') + '$');
-                const reducedPath = path.replace(this._regexSearchVariables, ':$2');
-                if (!this._routes.find((route) => (reducedPath === route.path))) {
+                const reducedPath = path.replace(this._regexSearchVariables, (_, __, component) => `:${component ?? 'AZ09'}`);
+                if (!this._routes.find((route) => jFSMRouter.CheckRouteEquivalence(reducedPath, route.path))) {
                     this._routes.push({
                         path: reducedPath,
                         validState: validState,
@@ -314,8 +333,8 @@ export class jFSMRouter {
             throw new SyntaxError('Duplicate path id');
         }
         else {
-            const reducedPath = path.replace(this._regexSearchVariables, ':$2');
-            const index = this._routes.findIndex((route) => (reducedPath == route.path));
+            const reducedPath = path.replace(this._regexSearchVariables, (_, __, component) => `:${component ?? 'AZ09'}`);
+            const index = this._routes.findIndex((route) => jFSMRouter.CheckRouteEquivalence(reducedPath, route.path));
             if (-1 < index) {
                 this._routes.splice(index, 1);
                 returnValue = true;
@@ -336,9 +355,8 @@ export class jFSMRouter {
         for (const route of this._routes) {
             if ((result = route.match.exec(path))) {
                 routePath = route.path;
-                let available = true;
+                let available = false;
                 if (route.available) {
-                    available = false;
                     if ('function' === typeof route.available) {
                         if ('AsyncFunction' === route.available.constructor.name) {
                             available = await route.available(routePath, path, (result.groups ?? {}));
@@ -353,9 +371,14 @@ export class jFSMRouter {
                         (this._currentState === route.validState) ||
                         (this.CheckTransition(route.validState)))) {
                     if (route.validState && (this._currentState !== route.validState)) {
-                        await this.StateSet(route.validState);
+                        routeFunction = route.routeFunction;
+                        if (!(await this.StateSet(route.validState))) {
+                            routeFunction = this._routeFunction500;
+                        }
                     }
-                    routeFunction = route.routeFunction;
+                    else {
+                        routeFunction = this._routeFunction500;
+                    }
                 }
                 else if (route.routeFunction403) {
                     routeFunction = route.routeFunction403;
@@ -366,9 +389,14 @@ export class jFSMRouter {
                 break;
             }
         }
-        if (!routeFunction || ('function' !== typeof routeFunction)) {
+        if (!routeFunction) {
             if (this._routeFunction404) {
                 routeFunction = this._routeFunction404;
+            }
+        }
+        if ('function' !== typeof routeFunction) {
+            if (this._routeFunction500) {
+                routeFunction = this._routeFunction500;
             }
         }
         if (routeFunction && ('function' === typeof routeFunction)) {
