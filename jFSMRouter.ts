@@ -16,10 +16,16 @@ type Route = {
 	routeFunction403?: RouteFunction
 };
 
-export default class jFSMRouter {
-	public static Create( initialState: string ): jFSMRouter {
-		return new jFSMRouter( initialState );
+class jFSMRouter {
+	private static _instance: ( jFSMRouter | undefined );
+
+	public static GetFSMRouter(): jFSMRouter {
+		if( 'undefined' === typeof jFSMRouter._instance ) {
+			jFSMRouter._instance = new jFSMRouter();
+		}
+		return jFSMRouter._instance;
 	}
+
 	private _regexDuplicatePathId = new RegExp( /\/(:\w+)(?:\[(?:09|AZ|AZ09)])?\/(?:.+\/)?(\1)(?:\[(?:09|AZ|AZ09)])?(?:\/|$)/g );
 	private _regexSearchVariables = new RegExp( /(?<=^|\/):(\w+)(?:\[(09|AZ|AZ09)])?(?=\/|$)/g );
 	private _routes: Route[] = [];
@@ -30,19 +36,17 @@ export default class jFSMRouter {
 	private _queue: string[] = [];
 
 	private _inTransition: boolean = false;
-	private _currentState: string;
+	private _currentState: ( string | undefined );
 	private _states: { [ key: string ]: { OnEnter: FunctionOnEnter[], OnLeave: FunctionOnLeave[] } } = {};
 	private _transitions: { [ key: string ]: { [ key: string ]: { OnBefore: FunctionOnTransitionBefore[], OnAfter: FunctionOnTransitionAfter[] } } } = {};
 
-	private constructor( initialState: string ) {
+	private constructor() {
 		window.addEventListener( "hashchange", this.CheckHash.bind( this ) );
-		this.StateAdd( initialState );
-		this._currentState = initialState;
 	}
 
-	private static CheckRouteEquivalence( path1: string, path2: string ): boolean {
-		const generateVariants = (path: string): string[ ] => {
-			let returnValue : string[ ] = [ path ];
+	private static _CheckRouteEquivalence( path1: string, path2: string ): boolean {
+		const generateVariants = ( path: string ): string[ ] => {
+			let returnValue: string[ ] = [ path ];
 			if( path.includes( ':AZ09' ) ) {
 				returnValue.push(
 					...generateVariants( path.replace( /:AZ09/, ':AZ' ) ),
@@ -52,7 +56,7 @@ export default class jFSMRouter {
 			return returnValue;
 		};
 		const variants = new Set( generateVariants( path1 ) );
-		return [...generateVariants( path2 ) ].some( x => variants.has( x ) );
+		return [ ...generateVariants( path2 ) ].some( x => variants.has( x ) );
 	}
 
 	public StateAdd( state: string ): boolean {
@@ -63,6 +67,9 @@ export default class jFSMRouter {
 				OnLeave: []
 			};
 			this._transitions[ state ] = {};
+			if( 'undefined' === typeof this._currentState ) {
+				this._currentState = state;
+			}
 			returnValue = true;
 		}
 		return returnValue;
@@ -206,7 +213,7 @@ export default class jFSMRouter {
 		return returnValue;
 	}
 
-	public StateGet(): string {
+	public StateGet(): ( string | undefined ) {
 		return this._currentState;
 	}
 
@@ -214,54 +221,52 @@ export default class jFSMRouter {
 		let returnValue = false;
 		if( !this._inTransition ) {
 			this._inTransition = true;
-			if( 'undefined' !== typeof ( this._states[ nextState ] ) ) {
-				if( ( 'undefined' !== typeof ( this._transitions[ this._currentState ] ) ) && ( 'undefined' !== typeof ( this._transitions[ this._currentState ][ nextState ] ) ) ) {
-					returnValue = true;
-					let cFL;
-					// Check if I can enter the new state: in case a function return false, abort
-					cFL = this._transitions[ this._currentState ][ nextState ].OnBefore.length;
-					for( let iFL = 0; ( returnValue && ( iFL < cFL ) ); iFL++ ) {
-						if( 'function' === typeof ( this._transitions[ this._currentState ][ nextState ].OnBefore[ iFL ] ) ) {
-							let tmpValue = null;
-							if( 'AsyncFunction' === this._transitions[ this._currentState ][ nextState ].OnBefore[ iFL ].constructor.name ) {
-								tmpValue = await this._transitions[ this._currentState ][ nextState ].OnBefore[ iFL ]();
+			if( ( 'undefined' !== typeof this._currentState ) && ( 'undefined' !== typeof ( this._states[ nextState ] ) ) && ( 'undefined' !== typeof ( this._transitions[ this._currentState ] ) ) && ( 'undefined' !== typeof ( this._transitions[ this._currentState ][ nextState ] ) ) ) {
+				returnValue = true;
+				let cFL;
+				// Check if I can enter the new state: in case a function return false, abort
+				cFL = this._transitions[ this._currentState ][ nextState ].OnBefore.length;
+				for( let iFL = 0; ( returnValue && ( iFL < cFL ) ); iFL++ ) {
+					if( 'function' === typeof ( this._transitions[ this._currentState ][ nextState ].OnBefore[ iFL ] ) ) {
+						let tmpValue = null;
+						if( 'AsyncFunction' === this._transitions[ this._currentState ][ nextState ].OnBefore[ iFL ].constructor.name ) {
+							tmpValue = await this._transitions[ this._currentState ][ nextState ].OnBefore[ iFL ]();
+						} else {
+							tmpValue = this._transitions[ this._currentState ][ nextState ].OnBefore[ iFL ]();
+						}
+						returnValue = ( false !== tmpValue );
+					}
+				}
+				if( returnValue ) {
+					cFL = this._states[ this._currentState ].OnLeave.length;
+					for( let iFL = 0; iFL < cFL; iFL++ ) {
+						if( 'function' === typeof ( this._states[ this._currentState ].OnLeave[ iFL ] ) ) {
+							if( 'AsyncFunction' === this._states[ this._currentState ].OnLeave[ iFL ].constructor.name ) {
+								await this._states[ this._currentState ].OnLeave[ iFL ]( this._currentState, nextState );
 							} else {
-								tmpValue = this._transitions[ this._currentState ][ nextState ].OnBefore[ iFL ]();
+								this._states[ this._currentState ].OnLeave[ iFL ]( this._currentState, nextState );
 							}
-							returnValue = ( false !== tmpValue );
 						}
 					}
-					if( returnValue ) {
-						cFL = this._states[ this._currentState ].OnLeave.length;
-						for( let iFL = 0; iFL < cFL; iFL++ ) {
-							if( 'function' === typeof ( this._states[ this._currentState ].OnLeave[ iFL ] ) ) {
-								if( 'AsyncFunction' === this._states[ this._currentState ].OnLeave[ iFL ].constructor.name ) {
-									await this._states[ this._currentState ].OnLeave[ iFL ]( this._currentState, nextState );
-								} else {
-									this._states[ this._currentState ].OnLeave[ iFL ]( this._currentState, nextState );
-								}
+					let previousState: string = this._currentState;
+					this._currentState = nextState;
+					cFL = this._transitions[ previousState ][ this._currentState ].OnAfter.length;
+					for( let iFL = 0; iFL < cFL; iFL++ ) {
+						if( 'function' === typeof ( this._transitions[ previousState ][ this._currentState ].OnAfter[ iFL ] ) ) {
+							if( 'AsyncFunction' === this._transitions[ previousState ][ this._currentState ].OnAfter[ iFL ].constructor.name ) {
+								await this._transitions[ previousState ][ this._currentState ].OnAfter[ iFL ]();
+							} else {
+								this._transitions[ previousState ][ this._currentState ].OnAfter[ iFL ]();
 							}
 						}
-						let previousState: string = this._currentState;
-						this._currentState = nextState;
-						cFL = this._transitions[ previousState ][ this._currentState ].OnAfter.length;
-						for( let iFL = 0; iFL < cFL; iFL++ ) {
-							if( 'function' === typeof ( this._transitions[ previousState ][ this._currentState ].OnAfter[ iFL ] ) ) {
-								if( 'AsyncFunction' === this._transitions[ previousState ][ this._currentState ].OnAfter[ iFL ].constructor.name ) {
-									await this._transitions[ previousState ][ this._currentState ].OnAfter[ iFL ]();
-								} else {
-									this._transitions[ previousState ][ this._currentState ].OnAfter[ iFL ]();
-								}
-							}
-						}
-						cFL = this._states[ this._currentState ].OnEnter.length;
-						for( let iFL = 0; iFL < cFL; iFL++ ) {
-							if( 'function' === typeof ( this._states[ this._currentState ].OnEnter[ iFL ] ) ) {
-								if( 'AsyncFunction' === this._states[ this._currentState ].OnEnter[ iFL ].constructor.name ) {
-									await this._states[ this._currentState ].OnEnter[ iFL ]( this._currentState, previousState );
-								} else {
-									this._states[ this._currentState ].OnEnter[ iFL ]( this._currentState, previousState );
-								}
+					}
+					cFL = this._states[ this._currentState ].OnEnter.length;
+					for( let iFL = 0; iFL < cFL; iFL++ ) {
+						if( 'function' === typeof ( this._states[ this._currentState ].OnEnter[ iFL ] ) ) {
+							if( 'AsyncFunction' === this._states[ this._currentState ].OnEnter[ iFL ].constructor.name ) {
+								await this._states[ this._currentState ].OnEnter[ iFL ]( this._currentState, previousState );
+							} else {
+								this._states[ this._currentState ].OnEnter[ iFL ]( this._currentState, previousState );
 							}
 						}
 					}
@@ -275,10 +280,8 @@ export default class jFSMRouter {
 	public CheckTransition( nextState: string ): boolean {
 		let returnValue = false;
 		if( !this._inTransition ) {
-			if( 'undefined' !== typeof ( this._states[ nextState ] ) ) {
-				if( ( 'undefined' !== typeof ( this._transitions[ this._currentState ] ) ) && ( 'undefined' !== typeof ( this._transitions[ this._currentState ][ nextState ] ) ) ) {
-					returnValue = true;
-				}
+			if( ( 'undefined' !== typeof this._currentState ) && ( 'undefined' !== typeof ( this._states[ nextState ] ) ) && ( 'undefined' !== typeof ( this._transitions[ this._currentState ] ) ) && ( 'undefined' !== typeof ( this._transitions[ this._currentState ][ nextState ] ) ) ) {
+				returnValue = true;
 			}
 		}
 		return returnValue;
@@ -347,9 +350,9 @@ export default class jFSMRouter {
 					} ).replace( /\//g, '\\\/' ) + '$' );
 				const reducedPath = path.replace(
 					this._regexSearchVariables,
-					( _, __, component ) => `:${component ?? 'AZ09'}`
+					( _, __, component ) => `:${ component ?? 'AZ09' }`
 				);
-				if( !this._routes.find( ( route: Route ) : boolean => jFSMRouter.CheckRouteEquivalence( reducedPath, route.path ) ) ) {
+				if( !this._routes.find( ( route: Route ): boolean => jFSMRouter._CheckRouteEquivalence( reducedPath, route.path ) ) ) {
 					this._routes.push( {
 						path: reducedPath,
 						validState: validState,
@@ -376,9 +379,9 @@ export default class jFSMRouter {
 		} else {
 			const reducedPath = path.replace(
 				this._regexSearchVariables,
-				( _, __, component ) => `:${component ?? 'AZ09'}`
+				( _, __, component ) => `:${ component ?? 'AZ09' }`
 			);
-			const index = this._routes.findIndex( ( route : Route ) : boolean => jFSMRouter.CheckRouteEquivalence( reducedPath, route.path ) );
+			const index = this._routes.findIndex( ( route: Route ): boolean => jFSMRouter._CheckRouteEquivalence( reducedPath, route.path ) );
 			if( -1 < index ) {
 				this._routes.splice( index, 1 );
 				returnValue = true;
@@ -470,3 +473,5 @@ export default class jFSMRouter {
 		}
 	}
 }
+
+export default jFSMRouter.GetFSMRouter;

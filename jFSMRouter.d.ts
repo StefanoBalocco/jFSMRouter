@@ -8,8 +8,9 @@ export type CheckAvailability = (path: string, hashPath: string, params?: {
 export type RouteFunction = (path: string, hashPath: string, params?: {
     [key: string]: string;
 }) => (void | Promise<void>);
-export default class jFSMRouter {
-    static Create(initialState: string): jFSMRouter;
+declare class jFSMRouter {
+    private static _instance;
+    static GetFSMRouter(): jFSMRouter;
     private _regexDuplicatePathId;
     private _regexSearchVariables;
     private _routes;
@@ -23,7 +24,7 @@ export default class jFSMRouter {
     private _states;
     private _transitions;
     private constructor();
-    private static CheckRouteEquivalence;
+    private static _CheckRouteEquivalence;
     StateAdd(state: string): boolean;
     StateDel(state: string): boolean;
     StateOnEnterAdd(state: string, func: FunctionOnEnter): boolean;
@@ -36,7 +37,7 @@ export default class jFSMRouter {
     TransitionOnBeforeDel(from: string, to: string, func: FunctionOnTransitionBefore): boolean;
     TransitionOnAfterAdd(from: string, to: string, func: FunctionOnTransitionAfter): boolean;
     TransitionOnAfterDel(from: string, to: string, func: FunctionOnTransitionAfter): boolean;
-    StateGet(): string;
+    StateGet(): (string | undefined);
     StateSet(nextState: string): Promise<boolean>;
     CheckTransition(nextState: string): boolean;
     RouteSpecialAdd(code: number, routeFunction: RouteFunction): boolean;
@@ -46,3 +47,5 @@ export default class jFSMRouter {
     Route(path: string): Promise<void>;
     CheckHash(): Promise<void>;
 }
+declare const _default: typeof jFSMRouter.GetFSMRouter;
+export default _default;
