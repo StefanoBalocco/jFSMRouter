@@ -1,7 +1,7 @@
 'use strict';
 class jFSMRouter {
     static _instance;
-    static GetFSMRouter() {
+    static _GetFSMRouter() {
         if ('undefined' === typeof jFSMRouter._instance) {
             jFSMRouter._instance = new jFSMRouter();
         }
@@ -427,4 +427,4 @@ class jFSMRouter {
         }
     }
 }
-export default jFSMRouter.GetFSMRouter;
+export default jFSMRouter._GetFSMRouter;

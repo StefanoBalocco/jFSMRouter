@@ -19,7 +19,7 @@ type Route = {
 class jFSMRouter {
 	private static _instance: ( jFSMRouter | undefined );
 
-	public static GetFSMRouter(): jFSMRouter {
+	public static _GetFSMRouter(): jFSMRouter {
 		if( 'undefined' === typeof jFSMRouter._instance ) {
 			jFSMRouter._instance = new jFSMRouter();
 		}
@@ -474,4 +474,4 @@ class jFSMRouter {
 	}
 }
 
-export default jFSMRouter.GetFSMRouter;
+export default jFSMRouter._GetFSMRouter;

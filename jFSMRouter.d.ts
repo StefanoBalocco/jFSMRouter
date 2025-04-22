@@ -10,7 +10,7 @@ export type RouteFunction = (path: string, hashPath: string, params?: {
 }) => (void | Promise<void>);
 declare class jFSMRouter {
     private static _instance;
-    static GetFSMRouter(): jFSMRouter;
+    static _GetFSMRouter(): jFSMRouter;
     private _regexDuplicatePathId;
     private _regexSearchVariables;
     private _routes;
@@ -47,5 +47,5 @@ declare class jFSMRouter {
     Route(path: string): Promise<void>;
     CheckHash(): Promise<void>;
 }
-declare const _default: typeof jFSMRouter.GetFSMRouter;
+declare const _default: typeof jFSMRouter._GetFSMRouter;
 export default _default;
