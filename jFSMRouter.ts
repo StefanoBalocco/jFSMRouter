@@ -404,8 +404,8 @@ class jFSMRouter {
 		for( const route of this._routes ) {
 			if( ( result = route.match.exec( path ) ) ) {
 				routePath = route.path;
-				let available: boolean = false;
-				if( route.available ) {
+				let available: boolean = true;
+				if( 'undefined' !== typeof route.available ) {
 					if( 'function' === typeof route.available ) {
 						if( 'AsyncFunction' === route.available.constructor.name ) {
 							available = await route.available( routePath, path, ( result.groups ?? {} ) );
@@ -413,6 +413,8 @@ class jFSMRouter {
 							// @ts-ignore
 							available = route.available( routePath, path, ( result.groups ?? {} ) );
 						}
+					} else {
+						available = false;
 					}
 				}
 				if( available &&
