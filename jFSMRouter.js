@@ -35,7 +35,7 @@ class jFSMRouter {
     }
     StateAdd(state) {
         let returnValue = false;
-        if ('undefined' === typeof (this._states[state])) {
+        if ('undefined' === typeof this._states[state]) {
             this._states[state] = {
                 OnEnter: [],
                 OnLeave: []
@@ -50,13 +50,13 @@ class jFSMRouter {
     }
     StateDel(state) {
         let returnValue = false;
-        if ('undefined' !== typeof (this._states[state])) {
+        if ('undefined' !== typeof this._states[state]) {
             delete (this._states[state]);
-            if ('undefined' !== typeof (this._transitions[state])) {
+            if ('undefined' !== typeof this._transitions[state]) {
                 delete (this._transitions[state]);
             }
             for (const tmpState in this._transitions) {
-                if ('undefined' !== typeof (this._transitions[tmpState][state])) {
+                if ('undefined' !== typeof this._transitions[tmpState][state]) {
                     delete (this._transitions[tmpState][state]);
                 }
             }
@@ -66,7 +66,7 @@ class jFSMRouter {
     }
     StateOnEnterAdd(state, func) {
         let returnValue = false;
-        if ('undefined' !== typeof (this._states[state])) {
+        if ('undefined' !== typeof this._states[state]) {
             if (!this._states[state].OnEnter.includes(func)) {
                 this._states[state].OnEnter.push(func);
                 returnValue = true;
@@ -76,7 +76,7 @@ class jFSMRouter {
     }
     StateOnEnterDel(state, func) {
         let returnValue = false;
-        if ('undefined' !== typeof (this._states[state])) {
+        if ('undefined' !== typeof this._states[state]) {
             const pos = this._states[state].OnEnter.indexOf(func);
             if (-1 !== pos) {
                 this._states[state].OnEnter.splice(pos, 1);
@@ -87,7 +87,7 @@ class jFSMRouter {
     }
     StateOnLeaveAdd(state, func) {
         let returnValue = false;
-        if ('undefined' !== typeof (this._states[state])) {
+        if ('undefined' !== typeof this._states[state]) {
             if (!this._states[state].OnLeave.includes(func)) {
                 this._states[state].OnLeave.push(func);
                 returnValue = true;
@@ -97,7 +97,7 @@ class jFSMRouter {
     }
     StateOnLeaveDel(state, func) {
         let returnValue = false;
-        if ('undefined' !== typeof (this._states[state])) {
+        if ('undefined' !== typeof this._states[state]) {
             const pos = this._states[state].OnLeave.indexOf(func);
             if (-1 !== pos) {
                 this._states[state].OnLeave.splice(pos, 1);
@@ -108,8 +108,8 @@ class jFSMRouter {
     }
     TransitionAdd(from, to) {
         let returnValue = false;
-        if (('undefined' !== typeof (this._states[from])) && ('undefined' !== typeof (this._states[to]))) {
-            if ('undefined' === typeof (this._transitions[from][to])) {
+        if (('undefined' !== typeof this._states[from]) && ('undefined' !== typeof this._states[to])) {
+            if ('undefined' === typeof this._transitions[from][to]) {
                 this._transitions[from][to] = {
                     OnBefore: [],
                     OnAfter: []
@@ -121,8 +121,8 @@ class jFSMRouter {
     }
     TransitionDel(from, to) {
         let returnValue = false;
-        if (('undefined' !== typeof (this._states[from])) && ('undefined' !== typeof (this._states[to]))) {
-            if ('undefined' !== typeof (this._transitions[from][to])) {
+        if (('undefined' !== typeof this._states[from]) && ('undefined' !== typeof this._states[to])) {
+            if ('undefined' !== typeof this._transitions[from][to]) {
                 delete (this._transitions[from][to]);
                 returnValue = true;
             }
@@ -131,8 +131,8 @@ class jFSMRouter {
     }
     TransitionOnBeforeAdd(from, to, func) {
         let returnValue = false;
-        if (('undefined' !== typeof (this._states[from])) && ('undefined' !== typeof (this._states[to]))) {
-            if ('undefined' !== typeof (this._transitions[from][to])) {
+        if (('undefined' !== typeof this._states[from]) && ('undefined' !== typeof this._states[to])) {
+            if ('undefined' !== typeof this._transitions[from][to]) {
                 this._transitions[from][to].OnBefore.push(func);
                 returnValue = true;
             }
@@ -141,8 +141,8 @@ class jFSMRouter {
     }
     TransitionOnBeforeDel(from, to, func) {
         let returnValue = false;
-        if (('undefined' !== typeof (this._states[from])) && ('undefined' !== typeof (this._states[to]))) {
-            if ('undefined' !== typeof (this._transitions[from][to])) {
+        if (('undefined' !== typeof this._states[from]) && ('undefined' !== typeof this._states[to])) {
+            if ('undefined' !== typeof this._transitions[from][to]) {
                 const pos = this._transitions[from][to].OnBefore.indexOf(func);
                 if (-1 !== pos) {
                     this._transitions[from][to].OnBefore.splice(pos, 1);
@@ -154,8 +154,8 @@ class jFSMRouter {
     }
     TransitionOnAfterAdd(from, to, func) {
         let returnValue = false;
-        if (('undefined' !== typeof (this._states[from])) && ('undefined' !== typeof (this._states[to]))) {
-            if ('undefined' !== typeof (this._transitions[from][to])) {
+        if (('undefined' !== typeof this._states[from]) && ('undefined' !== typeof this._states[to])) {
+            if ('undefined' !== typeof this._transitions[from][to]) {
                 this._transitions[from][to].OnAfter.push(func);
                 returnValue = true;
             }
@@ -164,8 +164,8 @@ class jFSMRouter {
     }
     TransitionOnAfterDel(from, to, func) {
         let returnValue = false;
-        if (('undefined' !== typeof (this._states[from])) && ('undefined' !== typeof (this._states[to]))) {
-            if ('undefined' !== typeof (this._transitions[from][to])) {
+        if (('undefined' !== typeof this._states[from]) && ('undefined' !== typeof this._states[to])) {
+            if ('undefined' !== typeof this._transitions[from][to]) {
                 const pos = this._transitions[from][to].OnAfter.indexOf(func);
                 if (-1 !== pos) {
                     this._transitions[from][to].OnAfter.splice(pos, 1);
@@ -182,12 +182,12 @@ class jFSMRouter {
         let returnValue = false;
         if (!this._inTransition) {
             this._inTransition = true;
-            if (('undefined' !== typeof this._currentState) && ('undefined' !== typeof (this._states[nextState])) && ('undefined' !== typeof (this._transitions[this._currentState])) && ('undefined' !== typeof (this._transitions[this._currentState][nextState]))) {
+            if (('undefined' !== typeof this._currentState) && ('undefined' !== typeof this._states[nextState]) && ('undefined' !== typeof this._transitions[this._currentState]) && ('undefined' !== typeof this._transitions[this._currentState][nextState])) {
                 returnValue = true;
                 let cFL;
                 cFL = this._transitions[this._currentState][nextState].OnBefore.length;
                 for (let iFL = 0; (returnValue && (iFL < cFL)); iFL++) {
-                    if ('function' === typeof (this._transitions[this._currentState][nextState].OnBefore[iFL])) {
+                    if ('function' === typeof this._transitions[this._currentState][nextState].OnBefore[iFL]) {
                         let tmpValue = null;
                         if ('AsyncFunction' === this._transitions[this._currentState][nextState].OnBefore[iFL].constructor.name) {
                             tmpValue = await this._transitions[this._currentState][nextState].OnBefore[iFL]();
@@ -201,7 +201,7 @@ class jFSMRouter {
                 if (returnValue) {
                     cFL = this._states[this._currentState].OnLeave.length;
                     for (let iFL = 0; iFL < cFL; iFL++) {
-                        if ('function' === typeof (this._states[this._currentState].OnLeave[iFL])) {
+                        if ('function' === typeof this._states[this._currentState].OnLeave[iFL]) {
                             if ('AsyncFunction' === this._states[this._currentState].OnLeave[iFL].constructor.name) {
                                 await this._states[this._currentState].OnLeave[iFL](this._currentState, nextState);
                             }
@@ -214,7 +214,7 @@ class jFSMRouter {
                     this._currentState = nextState;
                     cFL = this._transitions[previousState][this._currentState].OnAfter.length;
                     for (let iFL = 0; iFL < cFL; iFL++) {
-                        if ('function' === typeof (this._transitions[previousState][this._currentState].OnAfter[iFL])) {
+                        if ('function' === typeof this._transitions[previousState][this._currentState].OnAfter[iFL]) {
                             if ('AsyncFunction' === this._transitions[previousState][this._currentState].OnAfter[iFL].constructor.name) {
                                 await this._transitions[previousState][this._currentState].OnAfter[iFL]();
                             }
@@ -225,7 +225,7 @@ class jFSMRouter {
                     }
                     cFL = this._states[this._currentState].OnEnter.length;
                     for (let iFL = 0; iFL < cFL; iFL++) {
-                        if ('function' === typeof (this._states[this._currentState].OnEnter[iFL])) {
+                        if ('function' === typeof this._states[this._currentState].OnEnter[iFL]) {
                             if ('AsyncFunction' === this._states[this._currentState].OnEnter[iFL].constructor.name) {
                                 await this._states[this._currentState].OnEnter[iFL](this._currentState, previousState);
                             }
@@ -243,7 +243,7 @@ class jFSMRouter {
     CheckTransition(nextState) {
         let returnValue = false;
         if (!this._inTransition) {
-            if (('undefined' !== typeof this._currentState) && ('undefined' !== typeof (this._states[nextState])) && ('undefined' !== typeof (this._transitions[this._currentState])) && ('undefined' !== typeof (this._transitions[this._currentState][nextState]))) {
+            if (('undefined' !== typeof this._currentState) && ('undefined' !== typeof this._states[nextState]) && ('undefined' !== typeof this._transitions[this._currentState]) && ('undefined' !== typeof this._transitions[this._currentState][nextState])) {
                 returnValue = true;
             }
         }
@@ -275,7 +275,7 @@ class jFSMRouter {
     }
     RouteAdd(validState, path, routeFunction, available, routeFunction403) {
         let returnValue = false;
-        if ('undefined' === typeof (this._states[validState])) {
+        if ('undefined' === typeof this._states[validState]) {
             throw new SyntaxError('Non-existent state');
         }
         else {
@@ -370,17 +370,11 @@ class jFSMRouter {
                         available = false;
                     }
                 }
-                if (available &&
-                    (('undefined' === typeof route.validState) ||
-                        (this._currentState === route.validState) ||
-                        (this.CheckTransition(route.validState)))) {
-                    if (route.validState && (this._currentState !== route.validState)) {
+                if (available) {
+                    if (('undefined' === typeof route.validState) || (this._currentState === route.validState)) {
                         routeFunction = route.routeFunction;
-                        if (!(await this.StateSet(route.validState))) {
-                            routeFunction = this._routeFunction500;
-                        }
                     }
-                    else {
+                    else if (this._routeFunction500) {
                         routeFunction = this._routeFunction500;
                     }
                 }

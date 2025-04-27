@@ -1,3 +1,4 @@
+type Undefinedable<T> = T | undefined;
 export type FunctionOnEnter = (currentState: string, nextState: string) => (void | Promise<void>);
 export type FunctionOnLeave = (currentState: string, prevState: string) => (void | Promise<void>);
 export type FunctionOnTransitionAfter = () => (void | Promise<void>);
@@ -37,7 +38,7 @@ declare class jFSMRouter {
     TransitionOnBeforeDel(from: string, to: string, func: FunctionOnTransitionBefore): boolean;
     TransitionOnAfterAdd(from: string, to: string, func: FunctionOnTransitionAfter): boolean;
     TransitionOnAfterDel(from: string, to: string, func: FunctionOnTransitionAfter): boolean;
-    StateGet(): (string | undefined);
+    StateGet(): Undefinedable<string>;
     StateSet(nextState: string): Promise<boolean>;
     CheckTransition(nextState: string): boolean;
     RouteSpecialAdd(code: number, routeFunction: RouteFunction): boolean;
