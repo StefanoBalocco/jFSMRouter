@@ -10,9 +10,9 @@ class jFSMRouter {
     _regexDuplicatePathId = /\/(:\w+)(?:\[(?:09|AZ|AZ09)])?\/(?:.+\/)?(\1)(?:\[(?:09|AZ|AZ09)])?(?:\/|$)/g;
     _regexSearchVariables = /(?<=^|\/):(\w+)(?:\[(09|AZ|AZ09)])?(?=\/|$)/g;
     _routes = [];
-    _routeFunction403 = undefined;
-    _routeFunction404 = undefined;
-    _routeFunction500 = undefined;
+    _routeFunction403;
+    _routeFunction404;
+    _routeFunction500;
     _routing = false;
     _queue = [];
     _inTransition = false;
@@ -351,7 +351,7 @@ class jFSMRouter {
     }
     async Route(path) {
         this._routing = true;
-        let routeFunction = undefined;
+        let routeFunction;
         let routePath = '';
         let result = null;
         for (const route of this._routes) {
