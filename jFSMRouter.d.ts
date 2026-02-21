@@ -24,6 +24,7 @@ declare class jFSMRouter {
     private _currentState;
     private _states;
     private _transitions;
+    private _window;
     private constructor();
     private static _CheckRouteEquivalence;
     StateAdd(state: string): boolean;
