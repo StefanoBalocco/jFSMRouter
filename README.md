@@ -8,7 +8,7 @@ JavaScript Finite State Machine Router
 The class uses the Singleton pattern: only one global instance exists, which you can access with:
 
 ```js
-import jFSMRouter from 'https://cdn.jsdelivr.net/gh/StefanoBalocco/jFSMRouter@1.1.4/jFSMRouter.min.js';
+import jFSMRouter from 'https://cdn.jsdelivr.net/gh/StefanoBalocco/jFSMRouter@1.1.5/jFSMRouter.min.js';
 const router = jFSMRouter();
 ```
 
