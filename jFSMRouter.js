@@ -1,11 +1,7 @@
-'use strict';
 class jFSMRouter {
     static _instance;
-    static _GetFSMRouter() {
-        if (undefined === jFSMRouter._instance) {
-            jFSMRouter._instance = new jFSMRouter(window);
-        }
-        return jFSMRouter._instance;
+    static get instance() {
+        return (jFSMRouter._instance ??= new jFSMRouter(window));
     }
     _regexDuplicatePathId = /\/(:\w+)(?:\[(?:09|AZ|AZ09)])?\/(?:.+\/)?(\1)(?:\[(?:09|AZ|AZ09)])?(?:\/|$)/g;
     _regexSearchVariables = /(?<=^|\/):(\w+)(?:\[(09|AZ|AZ09)])?(?=\/|$)/g;
@@ -22,7 +18,7 @@ class jFSMRouter {
     _window;
     constructor(window) {
         this._window = window;
-        this._window.addEventListener("hashchange", this.CheckHash.bind(this));
+        this._window.addEventListener("hashchange", this.checkHash.bind(this));
     }
     static _CheckRouteEquivalence(path1, path2) {
         const generateVariants = (path) => {
@@ -35,30 +31,30 @@ class jFSMRouter {
         const variants = new Set(generateVariants(path1));
         return [...generateVariants(path2)].some(x => variants.has(x));
     }
-    StateAdd(state) {
+    stateAdd(state) {
         let returnValue = false;
-        if (undefined === this._states[state]) {
+        if (!this._states[state]) {
             this._states[state] = {
                 OnEnter: [],
                 OnLeave: []
             };
             this._transitions[state] = {};
-            if (undefined === this._currentState) {
+            if (!this._currentState) {
                 this._currentState = state;
             }
             returnValue = true;
         }
         return returnValue;
     }
-    StateDel(state) {
+    stateDel(state) {
         let returnValue = false;
-        if (undefined !== this._states[state]) {
+        if (this._states[state]) {
             delete this._states[state];
-            if (undefined !== this._transitions[state]) {
+            if (this._transitions[state]) {
                 delete this._transitions[state];
             }
             for (const tmpState in this._transitions) {
-                if (undefined !== this._transitions[tmpState][state]) {
+                if (this._transitions[tmpState][state]) {
                     delete this._transitions[tmpState][state];
                 }
             }
@@ -66,125 +62,109 @@ class jFSMRouter {
         }
         return returnValue;
     }
-    StateOnEnterAdd(state, func) {
+    stateOnEnterAdd(state, func) {
         let returnValue = false;
-        if (undefined !== this._states[state]) {
-            if (!this._states[state].OnEnter.includes(func)) {
-                this._states[state].OnEnter.push(func);
+        if (this._states[state] && !this._states[state].OnEnter.includes(func)) {
+            this._states[state].OnEnter.push(func);
+            returnValue = true;
+        }
+        return returnValue;
+    }
+    stateOnEnterDel(state, func) {
+        let returnValue = false;
+        if (this._states[state]) {
+            const position = this._states[state].OnEnter.indexOf(func);
+            if (-1 !== position) {
+                this._states[state].OnEnter.splice(position, 1);
                 returnValue = true;
             }
         }
         return returnValue;
     }
-    StateOnEnterDel(state, func) {
+    stateOnLeaveAdd(state, func) {
         let returnValue = false;
-        if (undefined !== this._states[state]) {
-            const pos = this._states[state].OnEnter.indexOf(func);
+        if (this._states[state] && !this._states[state].OnLeave.includes(func)) {
+            this._states[state].OnLeave.push(func);
+            returnValue = true;
+        }
+        return returnValue;
+    }
+    stateOnLeaveDel(state, func) {
+        let returnValue = false;
+        if (this._states[state]) {
+            const position = this._states[state].OnLeave.indexOf(func);
+            if (-1 !== position) {
+                this._states[state].OnLeave.splice(position, 1);
+                returnValue = true;
+            }
+        }
+        return returnValue;
+    }
+    transitionAdd(from, to) {
+        let returnValue = false;
+        if (this._states[from] && this._states[to] && !this._transitions[from][to]) {
+            this._transitions[from][to] = {
+                OnBefore: [],
+                OnAfter: []
+            };
+            returnValue = true;
+        }
+        return returnValue;
+    }
+    transitionDel(from, to) {
+        let returnValue = false;
+        if (this._states[from] && this._states[to] && this._transitions[from][to]) {
+            delete this._transitions[from][to];
+            returnValue = true;
+        }
+        return returnValue;
+    }
+    transitionOnBeforeAdd(from, to, func) {
+        let returnValue = false;
+        if (this._states[from] && this._states[to] && this._transitions[from][to]) {
+            this._transitions[from][to].OnBefore.push(func);
+            returnValue = true;
+        }
+        return returnValue;
+    }
+    transitionOnBeforeDel(from, to, func) {
+        let returnValue = false;
+        if (this._states[from] && this._states[to] && this._transitions[from][to]) {
+            const pos = this._transitions[from][to].OnBefore.indexOf(func);
             if (-1 !== pos) {
-                this._states[state].OnEnter.splice(pos, 1);
+                this._transitions[from][to].OnBefore.splice(pos, 1);
                 returnValue = true;
             }
         }
         return returnValue;
     }
-    StateOnLeaveAdd(state, func) {
+    transitionOnAfterAdd(from, to, func) {
         let returnValue = false;
-        if (undefined !== this._states[state]) {
-            if (!this._states[state].OnLeave.includes(func)) {
-                this._states[state].OnLeave.push(func);
-                returnValue = true;
-            }
+        if (this._states[from] && this._states[to] && this._transitions[from][to]) {
+            this._transitions[from][to].OnAfter.push(func);
+            returnValue = true;
         }
         return returnValue;
     }
-    StateOnLeaveDel(state, func) {
+    transitionOnAfterDel(from, to, func) {
         let returnValue = false;
-        if (undefined !== this._states[state]) {
-            const pos = this._states[state].OnLeave.indexOf(func);
+        if (this._states[from] && this._states[to] && this._transitions[from][to]) {
+            const pos = this._transitions[from][to].OnAfter.indexOf(func);
             if (-1 !== pos) {
-                this._states[state].OnLeave.splice(pos, 1);
+                this._transitions[from][to].OnAfter.splice(pos, 1);
                 returnValue = true;
             }
         }
         return returnValue;
     }
-    TransitionAdd(from, to) {
-        let returnValue = false;
-        if ((undefined !== this._states[from]) && (undefined !== this._states[to])) {
-            if (undefined === this._transitions[from][to]) {
-                this._transitions[from][to] = {
-                    OnBefore: [],
-                    OnAfter: []
-                };
-                returnValue = true;
-            }
-        }
-        return returnValue;
-    }
-    TransitionDel(from, to) {
-        let returnValue = false;
-        if ((undefined !== this._states[from]) && (undefined !== this._states[to])) {
-            if (undefined !== this._transitions[from][to]) {
-                delete this._transitions[from][to];
-                returnValue = true;
-            }
-        }
-        return returnValue;
-    }
-    TransitionOnBeforeAdd(from, to, func) {
-        let returnValue = false;
-        if ((undefined !== this._states[from]) && (undefined !== this._states[to])) {
-            if (undefined !== this._transitions[from][to]) {
-                this._transitions[from][to].OnBefore.push(func);
-                returnValue = true;
-            }
-        }
-        return returnValue;
-    }
-    TransitionOnBeforeDel(from, to, func) {
-        let returnValue = false;
-        if ((undefined !== this._states[from]) && (undefined !== this._states[to])) {
-            if (undefined !== this._transitions[from][to]) {
-                const pos = this._transitions[from][to].OnBefore.indexOf(func);
-                if (-1 !== pos) {
-                    this._transitions[from][to].OnBefore.splice(pos, 1);
-                    returnValue = true;
-                }
-            }
-        }
-        return returnValue;
-    }
-    TransitionOnAfterAdd(from, to, func) {
-        let returnValue = false;
-        if ((undefined !== this._states[from]) && (undefined !== this._states[to])) {
-            if (undefined !== this._transitions[from][to]) {
-                this._transitions[from][to].OnAfter.push(func);
-                returnValue = true;
-            }
-        }
-        return returnValue;
-    }
-    TransitionOnAfterDel(from, to, func) {
-        let returnValue = false;
-        if ((undefined !== this._states[from]) && (undefined !== this._states[to])) {
-            if (undefined !== this._transitions[from][to]) {
-                const pos = this._transitions[from][to].OnAfter.indexOf(func);
-                if (-1 !== pos) {
-                    this._transitions[from][to].OnAfter.splice(pos, 1);
-                    returnValue = true;
-                }
-            }
-        }
-        return returnValue;
-    }
-    StateGet() {
+    get state() {
         return this._currentState;
     }
-    async StateSet(nextState) {
+    async stateSet(nextState) {
         let returnValue = false;
         if (!this._inTransition) {
             this._inTransition = true;
-            if ((undefined !== this._currentState) && (undefined !== this._states[nextState]) && (undefined !== this._transitions[this._currentState]) && (undefined !== this._transitions[this._currentState][nextState])) {
+            if (this._currentState && this._states[nextState] && this._transitions[this._currentState] && this._transitions[this._currentState][nextState]) {
                 returnValue = true;
                 let cFL = this._transitions[this._currentState][nextState].OnBefore.length;
                 for (let iFL = 0; (returnValue && (iFL < cFL)); iFL++) {
@@ -241,16 +221,10 @@ class jFSMRouter {
         }
         return returnValue;
     }
-    CheckTransition(nextState) {
-        let returnValue = false;
-        if (!this._inTransition) {
-            if ((undefined !== this._currentState) && (undefined !== this._states[nextState]) && (undefined !== this._transitions[this._currentState]) && (undefined !== this._transitions[this._currentState][nextState])) {
-                returnValue = true;
-            }
-        }
-        return returnValue;
+    checkTransition(nextState) {
+        return !!(!this._inTransition && this._currentState && this._states[nextState] && this._transitions[this._currentState] && this._transitions[this._currentState][nextState]);
     }
-    RouteSpecialAdd(code, routeFunction) {
+    routeSpecialAdd(code, routeFunction) {
         let returnValue = false;
         switch (code) {
             case 403: {
@@ -274,12 +248,9 @@ class jFSMRouter {
         }
         return returnValue;
     }
-    RouteAdd(validState, path, routeFunction, available, routeFunction403) {
+    routeAdd(validState, path, routeFunction, available, routeFunction403) {
         let returnValue = false;
-        if (undefined === this._states[validState]) {
-            throw new SyntaxError('Non-existent state');
-        }
-        else {
+        if (this._states[validState]) {
             if (path.match(this._regexDuplicatePathId)) {
                 throw new SyntaxError('Duplicate path id');
             }
@@ -327,14 +298,14 @@ class jFSMRouter {
                 }
             }
         }
+        else {
+            throw new SyntaxError('Non-existent state');
+        }
         return returnValue;
     }
-    RouteDel(path) {
+    routeDel(path) {
         let returnValue = false;
-        if (path.match(this._regexDuplicatePathId)) {
-            throw new SyntaxError('Duplicate path id');
-        }
-        else {
+        if (!path.match(this._regexDuplicatePathId)) {
             const reducedPath = path.replace(this._regexSearchVariables, (_, __, component) => `:${component ?? 'AZ09'}`);
             const index = this._routes.findIndex((route) => jFSMRouter._CheckRouteEquivalence(reducedPath, route.path));
             if (-1 < index) {
@@ -342,14 +313,17 @@ class jFSMRouter {
                 returnValue = true;
             }
         }
+        else {
+            throw new SyntaxError('Duplicate path id');
+        }
         return returnValue;
     }
-    Trigger(path) {
+    trigger(path) {
         if ('#' + path != this._window.location.hash) {
             this._window.location.hash = '#' + path;
         }
     }
-    async Route(path) {
+    async route(path) {
         this._routing = true;
         let routeFunction;
         let routePath = '';
@@ -358,7 +332,7 @@ class jFSMRouter {
             if ((result = route.match.exec(path))) {
                 routePath = route.path;
                 let available = true;
-                if (undefined !== route.available) {
+                if (route.available) {
                     if ('function' === typeof route.available) {
                         if ('AsyncFunction' === route.available.constructor.name) {
                             available = await route.available(routePath, path, (result.groups ?? {}));
@@ -372,7 +346,7 @@ class jFSMRouter {
                     }
                 }
                 if (available) {
-                    if ((undefined === route.validState) || (this._currentState === route.validState)) {
+                    if (!route.validState || (this._currentState === route.validState)) {
                         routeFunction = route.routeFunction;
                     }
                     else if (this._routeFunction500) {
@@ -388,15 +362,11 @@ class jFSMRouter {
                 break;
             }
         }
-        if (!routeFunction) {
-            if (this._routeFunction404) {
-                routeFunction = this._routeFunction404;
-            }
+        if (!routeFunction && this._routeFunction404) {
+            routeFunction = this._routeFunction404;
         }
-        if ('function' !== typeof routeFunction) {
-            if (this._routeFunction500) {
-                routeFunction = this._routeFunction500;
-            }
+        if (('function' !== typeof routeFunction) && this._routeFunction500) {
+            routeFunction = this._routeFunction500;
         }
         if (routeFunction && ('function' === typeof routeFunction)) {
             if ('AsyncFunction' === routeFunction.constructor.name) {
@@ -407,22 +377,22 @@ class jFSMRouter {
             }
         }
         if (this._queue.length) {
-            await this.Route(this._queue.shift());
+            await this.route(this._queue.shift());
         }
         else {
             this._routing = false;
         }
     }
-    async CheckHash() {
+    async checkHash() {
         const hash = (this._window.location.hash.startsWith('#') ? this._window.location.hash.substring(1) : '');
         if ('' != hash) {
             if (this._routing) {
                 this._queue.push(hash);
             }
             else {
-                await this.Route(hash);
+                await this.route(hash);
             }
         }
     }
 }
-export default jFSMRouter._GetFSMRouter;
+export default jFSMRouter.instance;

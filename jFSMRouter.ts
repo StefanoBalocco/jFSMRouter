@@ -1,5 +1,3 @@
-'use strict';
-
 type Undefinedable<T> = T | undefined;
 type Nullable<T> = T | null;
 
@@ -22,11 +20,8 @@ type Route = {
 class jFSMRouter {
 	private static _instance: Undefinedable<jFSMRouter>;
 
-	public static _GetFSMRouter(): jFSMRouter {
-		if( undefined === jFSMRouter._instance ) {
-			jFSMRouter._instance = new jFSMRouter( window );
-		}
-		return jFSMRouter._instance;
+	public static get instance(): jFSMRouter {
+		return ( jFSMRouter._instance ??= new jFSMRouter( window ) );
 	}
 
 	private _regexDuplicatePathId: RegExp = /\/(:\w+)(?:\[(?:09|AZ|AZ09)])?\/(?:.+\/)?(\1)(?:\[(?:09|AZ|AZ09)])?(?:\/|$)/g;
@@ -45,7 +40,7 @@ class jFSMRouter {
 
 	private constructor( window: Window ) {
 		this._window = window;
-		this._window.addEventListener( "hashchange", this.CheckHash.bind( this ) );
+		this._window.addEventListener( "hashchange", this.checkHash.bind( this ) );
 	}
 
 	private static _CheckRouteEquivalence( path1: string, path2: string ): boolean {
@@ -63,15 +58,15 @@ class jFSMRouter {
 		return [ ...generateVariants( path2 ) ].some( x => variants.has( x ) );
 	}
 
-	public StateAdd( state: string ): boolean {
+	public stateAdd( state: string ): boolean {
 		let returnValue: boolean = false;
-		if( undefined === this._states[ state ] ) {
+		if( !this._states[ state ] ) {
 			this._states[ state ] = {
 				OnEnter: [],
 				OnLeave: []
 			};
 			this._transitions[ state ] = {};
-			if( undefined === this._currentState ) {
+			if( !this._currentState ) {
 				this._currentState = state;
 			}
 			returnValue = true;
@@ -79,15 +74,15 @@ class jFSMRouter {
 		return returnValue;
 	}
 
-	public StateDel( state: string ): boolean {
+	public stateDel( state: string ): boolean {
 		let returnValue: boolean = false;
-		if( undefined !== this._states[ state ] ) {
+		if( this._states[ state ] ) {
 			delete this._states[ state ];
-			if( undefined !== this._transitions[ state ] ) {
+			if( this._transitions[ state ] ) {
 				delete this._transitions[ state ];
 			}
 			for( const tmpState in this._transitions ) {
-				if( undefined !== this._transitions[ tmpState ][ state ] ) {
+				if( this._transitions[ tmpState ][ state ] ) {
 					delete this._transitions[ tmpState ][ state ];
 				}
 			}
@@ -96,136 +91,120 @@ class jFSMRouter {
 		return returnValue;
 	}
 
-	public StateOnEnterAdd( state: string, func: FunctionOnEnter ): boolean {
+	public stateOnEnterAdd( state: string, func: FunctionOnEnter ): boolean {
 		let returnValue: boolean = false;
-		if( undefined !== this._states[ state ] ) {
-			if( !this._states[ state ].OnEnter.includes( func ) ) {
-				this._states[ state ].OnEnter.push( func );
+		if( this._states[ state ] && !this._states[ state ].OnEnter.includes( func ) ) {
+			this._states[ state ].OnEnter.push( func );
+			returnValue = true;
+		}
+		return returnValue;
+	}
+
+	public stateOnEnterDel( state: string, func: FunctionOnEnter ): boolean {
+		let returnValue: boolean = false;
+		if( this._states[ state ] ) {
+			const position: number = this._states[ state ].OnEnter.indexOf( func );
+			if( -1 !== position ) {
+				this._states[ state ].OnEnter.splice( position, 1 );
 				returnValue = true;
 			}
 		}
 		return returnValue;
 	}
 
-	public StateOnEnterDel( state: string, func: FunctionOnEnter ): boolean {
+	public stateOnLeaveAdd( state: string, func: FunctionOnLeave ): boolean {
 		let returnValue: boolean = false;
-		if( undefined !== this._states[ state ] ) {
-			const pos: number = this._states[ state ].OnEnter.indexOf( func );
+		if( this._states[ state ] && !this._states[ state ].OnLeave.includes( func ) ) {
+			this._states[ state ].OnLeave.push( func );
+			returnValue = true;
+		}
+		return returnValue;
+	}
+
+	public stateOnLeaveDel( state: string, func: FunctionOnLeave ): boolean {
+		let returnValue: boolean = false;
+		if( this._states[ state ] ) {
+			const position: number = this._states[ state ].OnLeave.indexOf( func );
+			if( -1 !== position ) {
+				this._states[ state ].OnLeave.splice( position, 1 );
+				returnValue = true;
+			}
+		}
+		return returnValue;
+	}
+
+	public transitionAdd( from: string, to: string ): boolean {
+		let returnValue: boolean = false;
+		if( this._states[ from ] && this._states[ to ] && !this._transitions[ from ][ to ] ) {
+			this._transitions[ from ][ to ] = {
+				OnBefore: [],
+				OnAfter: []
+			};
+			returnValue = true;
+		}
+		return returnValue;
+	}
+
+	public transitionDel( from: string, to: string ): boolean {
+		let returnValue: boolean = false;
+		if( this._states[ from ] && this._states[ to ] && this._transitions[ from ][ to ] ) {
+			delete this._transitions[ from ][ to ];
+			returnValue = true;
+		}
+		return returnValue;
+	}
+
+	public transitionOnBeforeAdd( from: string, to: string, func: FunctionOnTransitionBefore ): boolean {
+		let returnValue: boolean = false;
+		if( this._states[ from ] && this._states[ to ] && this._transitions[ from ][ to ] ) {
+			this._transitions[ from ][ to ].OnBefore.push( func );
+			returnValue = true;
+		}
+		return returnValue;
+	}
+
+	public transitionOnBeforeDel( from: string, to: string, func: FunctionOnTransitionBefore ): boolean {
+		let returnValue: boolean = false;
+		if( this._states[ from ] && this._states[ to ] && this._transitions[ from ][ to ] ) {
+			const pos: number = this._transitions[ from ][ to ].OnBefore.indexOf( func );
 			if( -1 !== pos ) {
-				this._states[ state ].OnEnter.splice( pos, 1 );
+				this._transitions[ from ][ to ].OnBefore.splice( pos, 1 );
 				returnValue = true;
 			}
 		}
 		return returnValue;
 	}
 
-	public StateOnLeaveAdd( state: string, func: FunctionOnLeave ): boolean {
+	public transitionOnAfterAdd( from: string, to: string, func: FunctionOnTransitionAfter ): boolean {
 		let returnValue: boolean = false;
-		if( undefined !== this._states[ state ] ) {
-			if( !this._states[ state ].OnLeave.includes( func ) ) {
-				this._states[ state ].OnLeave.push( func );
-				returnValue = true;
-			}
+		if( this._states[ from ] && this._states[ to ] && this._transitions[ from ][ to ] ) {
+			this._transitions[ from ][ to ].OnAfter.push( func );
+			returnValue = true;
 		}
 		return returnValue;
 	}
 
-	public StateOnLeaveDel( state: string, func: FunctionOnLeave ): boolean {
+	public transitionOnAfterDel( from: string, to: string, func: FunctionOnTransitionAfter ): boolean {
 		let returnValue: boolean = false;
-		if( undefined !== this._states[ state ] ) {
-			const pos: number = this._states[ state ].OnLeave.indexOf( func );
+		if( this._states[ from ] && this._states[ to ] && this._transitions[ from ][ to ] ) {
+			const pos: number = this._transitions[ from ][ to ].OnAfter.indexOf( func );
 			if( -1 !== pos ) {
-				this._states[ state ].OnLeave.splice( pos, 1 );
+				this._transitions[ from ][ to ].OnAfter.splice( pos, 1 );
 				returnValue = true;
 			}
 		}
 		return returnValue;
 	}
 
-	public TransitionAdd( from: string, to: string ): boolean {
-		let returnValue: boolean = false;
-		if( ( undefined !== this._states[ from ] ) && ( undefined !== this._states[ to ] ) ) {
-			if( undefined === this._transitions[ from ][ to ] ) {
-				this._transitions[ from ][ to ] = {
-					OnBefore: [],
-					OnAfter: []
-				};
-				returnValue = true;
-			}
-		}
-		return returnValue;
-	}
-
-	public TransitionDel( from: string, to: string ): boolean {
-		let returnValue: boolean = false;
-		if( ( undefined !== this._states[ from ] ) && ( undefined !== this._states[ to ] ) ) {
-			if( undefined !== this._transitions[ from ][ to ] ) {
-				delete this._transitions[ from ][ to ];
-				returnValue = true;
-			}
-		}
-		return returnValue;
-	}
-
-	public TransitionOnBeforeAdd( from: string, to: string, func: FunctionOnTransitionBefore ): boolean {
-		let returnValue: boolean = false;
-		if( ( undefined !== this._states[ from ] ) && ( undefined !== this._states[ to ] ) ) {
-			if( undefined !== this._transitions[ from ][ to ] ) {
-				this._transitions[ from ][ to ].OnBefore.push( func );
-				returnValue = true;
-			}
-		}
-		return returnValue;
-	}
-
-	public TransitionOnBeforeDel( from: string, to: string, func: FunctionOnTransitionBefore ): boolean {
-		let returnValue: boolean = false;
-		if( ( undefined !== this._states[ from ] ) && ( undefined !== this._states[ to ] ) ) {
-			if( undefined !== this._transitions[ from ][ to ] ) {
-				const pos: number = this._transitions[ from ][ to ].OnBefore.indexOf( func );
-				if( -1 !== pos ) {
-					this._transitions[ from ][ to ].OnBefore.splice( pos, 1 );
-					returnValue = true;
-				}
-			}
-		}
-		return returnValue;
-	}
-
-	public TransitionOnAfterAdd( from: string, to: string, func: FunctionOnTransitionAfter ): boolean {
-		let returnValue: boolean = false;
-		if( ( undefined !== this._states[ from ] ) && ( undefined !== this._states[ to ] ) ) {
-			if( undefined !== this._transitions[ from ][ to ] ) {
-				this._transitions[ from ][ to ].OnAfter.push( func );
-				returnValue = true;
-			}
-		}
-		return returnValue;
-	}
-
-	public TransitionOnAfterDel( from: string, to: string, func: FunctionOnTransitionAfter ): boolean {
-		let returnValue: boolean = false;
-		if( ( undefined !== this._states[ from ] ) && ( undefined !== this._states[ to ] ) ) {
-			if( undefined !== this._transitions[ from ][ to ] ) {
-				const pos: number = this._transitions[ from ][ to ].OnAfter.indexOf( func );
-				if( -1 !== pos ) {
-					this._transitions[ from ][ to ].OnAfter.splice( pos, 1 );
-					returnValue = true;
-				}
-			}
-		}
-		return returnValue;
-	}
-
-	public StateGet(): Undefinedable<string> {
+	public get state(): Undefinedable<string> {
 		return this._currentState;
 	}
 
-	public async StateSet( nextState: string ): Promise<boolean> {
+	public async stateSet( nextState: string ): Promise<boolean> {
 		let returnValue: boolean = false;
 		if( !this._inTransition ) {
 			this._inTransition = true;
-			if( ( undefined !== this._currentState ) && ( undefined !== this._states[ nextState ] ) && ( undefined !== this._transitions[ this._currentState ] ) && ( undefined !== this._transitions[ this._currentState ][ nextState ] ) ) {
+			if( this._currentState && this._states[ nextState ] && this._transitions[ this._currentState ] && this._transitions[ this._currentState ][ nextState ] ) {
 				returnValue = true;
 				// Check if I can enter the new state: in case a function return false, abort
 				let cFL: number = this._transitions[ this._currentState ][ nextState ].OnBefore.length;
@@ -280,17 +259,11 @@ class jFSMRouter {
 		return returnValue;
 	}
 
-	public CheckTransition( nextState: string ): boolean {
-		let returnValue: boolean = false;
-		if( !this._inTransition ) {
-			if( ( undefined !== this._currentState ) && ( undefined !== this._states[ nextState ] ) && ( undefined !== this._transitions[ this._currentState ] ) && ( undefined !== this._transitions[ this._currentState ][ nextState ] ) ) {
-				returnValue = true;
-			}
-		}
-		return returnValue;
+	public checkTransition( nextState: string ): boolean {
+		return !!( !this._inTransition && this._currentState && this._states[ nextState ] && this._transitions[ this._currentState ] && this._transitions[ this._currentState ][ nextState ] );
 	}
 
-	public RouteSpecialAdd( code: number, routeFunction: RouteFunction ) {
+	public routeSpecialAdd( code: number, routeFunction: RouteFunction ) {
 		let returnValue: boolean = false;
 		switch( code ) {
 			case 403: {
@@ -315,11 +288,9 @@ class jFSMRouter {
 		return returnValue;
 	}
 
-	public RouteAdd( validState: string, path: string, routeFunction: RouteFunction, available?: CheckAvailability, routeFunction403?: RouteFunction ) {
+	public routeAdd( validState: string, path: string, routeFunction: RouteFunction, available?: CheckAvailability, routeFunction403?: RouteFunction ) {
 		let returnValue: boolean = false;
-		if( undefined === this._states[ validState ] ) {
-			throw new SyntaxError( 'Non-existent state' );
-		} else {
+		if( this._states[ validState ] ) {
 			if( path.match( this._regexDuplicatePathId ) ) {
 				throw new SyntaxError( 'Duplicate path id' );
 			} else {
@@ -371,15 +342,15 @@ class jFSMRouter {
 					returnValue = true;
 				}
 			}
+		} else {
+			throw new SyntaxError( 'Non-existent state' );
 		}
 		return returnValue;
 	}
 
-	public RouteDel( path: string ): boolean {
+	public routeDel( path: string ): boolean {
 		let returnValue: boolean = false;
-		if( path.match( this._regexDuplicatePathId ) ) {
-			throw new SyntaxError( 'Duplicate path id' );
-		} else {
+		if( !path.match( this._regexDuplicatePathId ) ) {
 			const reducedPath: string = path.replace(
 				this._regexSearchVariables,
 				( _, __, component ) => `:${ component ?? 'AZ09' }`
@@ -389,17 +360,19 @@ class jFSMRouter {
 				this._routes.splice( index, 1 );
 				returnValue = true;
 			}
+		} else {
+			throw new SyntaxError( 'Duplicate path id' );
 		}
 		return returnValue;
 	}
 
-	public Trigger( path: string ): void {
+	public trigger( path: string ): void {
 		if( '#' + path != this._window.location.hash ) {
 			this._window.location.hash = '#' + path;
 		}
 	}
 
-	public async Route( path: string ): Promise<void> {
+	public async route( path: string ): Promise<void> {
 		this._routing = true;
 		let routeFunction: Undefinedable<RouteFunction>;
 		let routePath: string = '';
@@ -408,7 +381,7 @@ class jFSMRouter {
 			if( ( result = route.match.exec( path ) ) ) {
 				routePath = route.path;
 				let available: boolean = true;
-				if( undefined !== route.available ) {
+				if( route.available ) {
 					if( 'function' === typeof route.available ) {
 						if( 'AsyncFunction' === route.available.constructor.name ) {
 							available = await route.available( routePath, path, ( result.groups ?? {} ) );
@@ -421,7 +394,7 @@ class jFSMRouter {
 					}
 				}
 				if( available ) {
-					if( ( undefined === route.validState ) || ( this._currentState === route.validState ) ) {
+					if( !route.validState || ( this._currentState === route.validState ) ) {
 						routeFunction = route.routeFunction;
 					} else if( this._routeFunction500 ) {
 						routeFunction = this._routeFunction500;
@@ -434,15 +407,11 @@ class jFSMRouter {
 				break;
 			}
 		}
-		if( !routeFunction ) {
-			if( this._routeFunction404 ) {
-				routeFunction = this._routeFunction404;
-			}
+		if( !routeFunction && this._routeFunction404 ) {
+			routeFunction = this._routeFunction404;
 		}
-		if( 'function' !== typeof routeFunction ) {
-			if( this._routeFunction500 ) {
-				routeFunction = this._routeFunction500;
-			}
+		if( ( 'function' !== typeof routeFunction ) && this._routeFunction500 ) {
+			routeFunction = this._routeFunction500;
 		}
 		if( routeFunction && ( 'function' === typeof routeFunction ) ) {
 			if( 'AsyncFunction' === routeFunction.constructor.name ) {
@@ -452,22 +421,22 @@ class jFSMRouter {
 			}
 		}
 		if( this._queue.length ) {
-			await this.Route( this._queue.shift()! );
+			await this.route( this._queue.shift()! );
 		} else {
 			this._routing = false;
 		}
 	}
 
-	public async CheckHash(): Promise<void> {
+	public async checkHash(): Promise<void> {
 		const hash: string = ( this._window.location.hash.startsWith( '#' ) ? this._window.location.hash.substring( 1 ) : '' );
 		if( '' != hash ) {
 			if( this._routing ) {
 				this._queue.push( hash );
 			} else {
-				await this.Route( hash );
+				await this.route( hash );
 			}
 		}
 	}
 }
 
-export default jFSMRouter._GetFSMRouter;
+export default jFSMRouter.instance;

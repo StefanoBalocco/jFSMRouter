@@ -8,8 +8,7 @@ JavaScript Finite State Machine Router
 The class uses the Singleton pattern: only one global instance exists, which you can access with:
 
 ```js
-import jFSMRouter from 'https://cdn.jsdelivr.net/gh/StefanoBalocco/jFSMRouter@1.1.5/jFSMRouter.min.js';
-const router = jFSMRouter();
+import router from 'https://cdn.jsdelivr.net/gh/StefanoBalocco/jFSMRouter@2.0.0/jFSMRouter.min.js';
 ```
 
 ## 2. States
@@ -19,7 +18,7 @@ States represent the logical steps of your application.
 ### 2.1 Add a State
 
 ```js
-router.StateAdd('home');  // Adds the "home" state
+router.stateAdd('home');  // Adds the "home" state
 ```
 
 - Returns `true` if the state is successfully created.
@@ -28,7 +27,7 @@ router.StateAdd('home');  // Adds the "home" state
 ### 2.2 Remove a State
 
 ```js
-router.StateDel('home');   // Removes the "home" state
+router.stateDel('home');   // Removes the "home" state
 ```
 
 ### 2.3 Handle Entry and Exit Hooks
@@ -40,15 +39,15 @@ router.StateDel('home');   // Removes the "home" state
 function onEnter(prev, next) { console.log(`Entering ${next}`); }
 function onLeave(curr, next) { console.log(`Leaving ${curr}`); }
 
-router.StateOnEnterAdd('home', onEnter);
-router.StateOnLeaveAdd('home', onLeave);
+router.stateOnEnterAdd('home', onEnter);
+router.stateOnLeaveAdd('home', onLeave);
 ```
 
 To remove hooks:
 
 ```js
-router.StateOnEnterDel('home', onEnter);
-router.StateOnLeaveDel('home', onLeave);
+router.stateOnEnterDel('home', onEnter);
+router.stateOnLeaveDel('home', onLeave);
 ```
 
 ## 3. Transitions
@@ -58,13 +57,13 @@ Transitions define permissions and hooks between two states.
 ### 3.1 Add a Transition
 
 ```js
-router.TransitionAdd('home', 'about');
+router.transitionAdd('home', 'about');
 ```
 
 ### 3.2 Remove a Transition
 
 ```js
-router.TransitionDel('home', 'about');
+router.transitionDel('home', 'about');
 ```
 
 ### 3.3 Transition Hooks
@@ -76,15 +75,15 @@ router.TransitionDel('home', 'about');
 function before() { return confirm('Go to the About page?'); }
 async function after() { console.log('Transition completed'); }
 
-router.TransitionOnBeforeAdd('home', 'about', before);
-router.TransitionOnAfterAdd('home', 'about', after);
+router.transitionOnBeforeAdd('home', 'about', before);
+router.transitionOnAfterAdd('home', 'about', after);
 ```
 
 To remove hooks:
 
 ```js
-router.TransitionOnBeforeDel('home', 'about', before);
-router.TransitionOnAfterDel('home', 'about', after);
+router.transitionOnBeforeDel('home', 'about', before);
+router.transitionOnAfterDel('home', 'about', after);
 ```
 
 ## 4. Hash-Based Routing
@@ -95,7 +94,7 @@ Each route is associated with a valid state.
 
 ```js
 // path: '/user/:id[09]'
-router.RouteAdd(
+router.routeAdd(
   'home',                   // required state
   '/user/:id[09]',          // path with variables
   (pathDef, actual, vars) => { console.log(vars.id); },
@@ -112,28 +111,28 @@ router.RouteAdd(
 ### 4.2 Remove a Route
 
 ```js
-router.RouteDel('/user/:id[09]');
+router.routeDel('/user/:id[09]');
 ```
 
 ### 4.3 Special Routes
 
 ```js
-router.RouteSpecialAdd(404, () => { /* page not found */ });
-router.RouteSpecialAdd(403, () => { /* access denied */ });
-router.RouteSpecialAdd(500, () => { /* internal error */ });
+router.routeSpecialAdd(404, () => { /* page not found */ });
+router.routeSpecialAdd(403, () => { /* access denied */ });
+router.routeSpecialAdd(500, () => { /* internal error */ });
 ```
 
-### 4.4 Manual Trigger
+### 4.4 Manual trigger
 
 To force navigation:
 
 ```js
-router.Trigger('user/123'); // sets the hash and triggers routing
+router.trigger('user/123'); // sets the hash and triggers routing
 ```
 
 ## 5. Internal Mechanism
 
-- The `hashchange` listener calls `CheckHash()`.
+- The `hashchange` listener calls `checkHash()`.
 - More specific paths (higher weight) take priority.
 - FSM handles the proper hook sequence: OnBefore → OnLeave → OnAfter → OnEnter.
 
@@ -145,32 +144,31 @@ router.Trigger('user/123'); // sets the hash and triggers routing
 <head><title>jFSMRouter Demo</title></head>
 <body>
 <script type="module">
-  import jFMSRouter from 'https://example.org/jFSMRouter.js';
-  const router = jFSMRouter();
+  import router from 'https://example.org/jFSMRouter.js';
 
   // Define states
-  router.StateAdd('home');
-  router.StateAdd('user');
+  router.stateAdd('home');
+  router.stateAdd('user');
 
   // State hooks
-  router.StateOnEnterAdd('home', () => console.log('Entered Home'));
-  router.StateOnEnterAdd('user', (_, prev) => console.log(`User ${prev}→user`));
+  router.stateOnEnterAdd('home', () => console.log('Entered Home'));
+  router.stateOnEnterAdd('user', (_, prev) => console.log(`User ${prev}→user`));
 
   // Transitions
-  router.TransitionAdd('home', 'user');
+  router.transitionAdd('home', 'user');
 
   // Routing
-  router.RouteSpecialAdd(404, () => document.body.innerHTML = '<h1>404 Not Found</h1>');
-  router.RouteAdd(
+  router.routeSpecialAdd(404, () => document.body.innerHTML = '<h1>404 Not Found</h1>');
+  router.routeAdd(
     'home', '/home', () => alert('Welcome!')
   );
-  router.RouteAdd(
+  router.routeAdd(
     'user', '/user/:id[09]', (pd, act, { id }) =>
       document.body.innerHTML = `<h1>User ${id}</h1>`
   );
 
   // Initial startup (if hash already present)
-  router.CheckHash();
+  router.checkHash();
 </script>
 </body>
 </html>
