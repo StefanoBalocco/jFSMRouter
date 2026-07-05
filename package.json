@@ -29,7 +29,7 @@
     "fsm"
   ],
   "author": "Stefano Balocco <stefano.balocco@gmail.com>",
-  "license": "MIT",
+  "license": "BSD-3-Clause",
   "bugs": {
     "url": "https://github.com/StefanoBalocco/jFSMRouter/issues"
   },
