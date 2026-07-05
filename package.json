@@ -1,8 +1,20 @@
 {
-  "name": "jfsmrouter",
+  "name": "@stefanobalocco/jfsmrouter",
   "description": "Hash router meet a finite state machine",
   "exports": "./jFSMRouter.min.js",
   "types": "jFSMRouter.d.ts",
+  "files": [
+    "jFSMRouter.js",
+    "jFSMRouter.min.js",
+    "jFSMRouter.d.ts",
+    "jFSMRouter.ts",
+    "jFSMRouter.test.js",
+    "jFSMRouter.test.ts",
+    "build.mjs",
+    "tsconfig.json",
+    "tsconfig.tests.json",
+    "jsdom.d.ts"
+  ],
   "type": "module",
   "repository": {
     "type": "git",
@@ -22,6 +34,9 @@
     "url": "https://github.com/StefanoBalocco/jFSMRouter/issues"
   },
   "homepage": "https://github.com/StefanoBalocco/jFSMRouter",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "node build.mjs library tests",
     "build:library": "node build.mjs library",
