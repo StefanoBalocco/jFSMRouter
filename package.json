@@ -20,7 +20,7 @@
     "type": "git",
     "url": "https://github.com/StefanoBalocco/jFSMRouter.git"
   },
-  "version": "2.0.1",
+  "version": "2.0.2",
   "keywords": [
     "hash router",
     "client-side router",
@@ -38,16 +38,17 @@
     "access": "public"
   },
   "scripts": {
-    "build": "node build.mjs library tests",
+    "build": "node build.mjs all",
     "build:library": "node build.mjs library",
     "build:tests": "node build.mjs tests",
     "tests": "c8 --reporter=text --reporter=lcov ava '*.test.js' --verbose"
   },
   "devDependencies": {
+    "@stefanobalocco/tersercompanion": "~1",
     "ava": "~6",
-    "c8": "~10",
+    "c8": "~12",
     "jsdom": "~26",
     "terser": "~5",
-    "typescript": "~5"
+    "typescript": "~6"
   }
 }
